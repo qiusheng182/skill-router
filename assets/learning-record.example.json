@@ -1,0 +1,37 @@
+{
+  "id": "LR-20260914-120000-ab12cd",
+  "created_at": "2026-09-14T12:00:00+08:00",
+  "task": "HLS seeking failed after a proxy change",
+  "target_skill": "video-media-platform-engineering",
+  "attempts": [
+    {
+      "sequence": 1,
+      "stage": "failed",
+      "action": "Checked the browser player code",
+      "details": "Player requested a valid byte range."
+    },
+    {
+      "sequence": 2,
+      "stage": "failed",
+      "action": "Checked the HLS manifest",
+      "details": "Variant and segment URLs were valid."
+    },
+    {
+      "sequence": 3,
+      "stage": "successful",
+      "action": "Inspected the reverse proxy Range forwarding",
+      "details": "Proxy stripped Range and returned 200 instead of 206."
+    }
+  ],
+  "solution": "Preserve Range and If-Range headers at the proxy layer.",
+  "evidence": [
+    "Before: HTTP 200 and no Content-Range.",
+    "After: HTTP 206 with Content-Range bytes 0-63/total."
+  ],
+  "source_urls": [
+    "https://www.rfc-editor.org/rfc/rfc9110.html"
+  ],
+  "generalizability": "pattern",
+  "status": "recorded"
+}
+

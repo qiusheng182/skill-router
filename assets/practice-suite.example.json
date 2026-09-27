@@ -1,0 +1,35 @@
+{
+  "skill": "video-media-platform-engineering",
+  "cases": [
+    {
+      "id": "range-success",
+      "name": "Range request returns 206",
+      "command": [
+        "python",
+        "scripts/check_media_server.py",
+        "--url",
+        "http://127.0.0.1:8000/media/sample.mp4"
+      ],
+      "timeout": 60,
+      "expect_exit": 0,
+      "expect_stdout_contains": [
+        "206"
+      ]
+    },
+    {
+      "id": "missing-file",
+      "name": "Missing media returns a clear failure",
+      "command": [
+        "python",
+        "scripts/check_media_server.py",
+        "--url",
+        "http://127.0.0.1:8000/media/missing.mp4"
+      ],
+      "timeout": 60,
+      "expect_exit": 1,
+      "expect_stderr_contains": [
+        "404"
+      ]
+    }
+  ]
+}

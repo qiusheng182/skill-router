@@ -1,0 +1,7 @@
+interface:
+  display_name: "Skill Router & Administrator"
+  short_description: "Route, learn, validate, update, and sync skills"
+  default_prompt: "Use $skill-router to route this task and apply the configured skill-evolution policy."
+policy:
+  allow_implicit_invocation: true
+

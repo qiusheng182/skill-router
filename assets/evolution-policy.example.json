@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "mode": "propose",
+  "minimum_failed_attempts": 2,
+  "research": {
+    "enabled": true,
+    "official_sources_only": true,
+    "max_sources": 5,
+    "allowed_domains": [
+      "datatracker.ietf.org",
+      "rfc-editor.org",
+      "docs.python.org",
+      "ffmpeg.org",
+      "developer.mozilla.org",
+      "docs.scrapy.org",
+      "fastapi.tiangolo.com",
+      "docs.docker.com"
+    ]
+  },
+  "apply": {
+    "require_validation": true,
+    "create_snapshot": true,
+    "allow_deletions": false,
+    "allow_permission_changes": false,
+    "allow_new_scripts": false
+  },
+  "sync_providers": [
+    "codex",
+    "opencode"
+  ],
+  "review": {
+    "pending_on_high_risk": true,
+    "pending_on_unverified_source": true,
+    "pending_on_frontmatter_change": true
+  }
+}
+

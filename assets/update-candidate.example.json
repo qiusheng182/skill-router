@@ -1,0 +1,26 @@
+{
+  "id": "UC-20260914-121000-ef34gh",
+  "record_id": "LR-20260914-120000-ab12cd",
+  "created_at": "2026-09-14T12:10:00+08:00",
+  "target_skill": "video-media-platform-engineering",
+  "risk": "low",
+  "changes": [
+    {
+      "file": "references/diagnostics.md",
+      "type": "update",
+      "summary": "Add proxy Range stripping to the seeking-failure checklist.",
+      "content": "## Seeking Failure Checklist\n\n- Check proxy Range and If-Range forwarding.\n"
+    }
+  ],
+  "validation_commands": [
+    [
+      "python",
+      "scripts/check_media_server.py",
+      "--url",
+      "http://127.0.0.1:8000/media/sample.mp4"
+    ]
+  ],
+  "expected_result": "Validation returns HTTP 206 and a valid Content-Range.",
+  "snapshot_path": "C:\\Users\\example\\.codex\\skill-evolution\\snapshots\\video-media-platform-engineering\\before-UC-20260914-121000-ef34gh",
+  "status": "proposed"
+}
