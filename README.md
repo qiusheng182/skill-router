@@ -1,145 +1,132 @@
-# Skill Router：一个会节省上下文、会练习、也会进化的 Skill 管理员
+# Skill Router: A Skill Administrator That Saves Context, Practices, and Evolves
 
-> 不是让 AI 记住更多技能，而是让它在正确的时间，只记住正确的技能。
+> The goal is not to make an AI remember more skills. The goal is to make it remember the right skills at the right time.
 
-## 导语
+## The Story
 
-AI Agent 的能力正在迅速增长，但上下文不是免费的。
+AI agents are accumulating skills quickly. Writing has a skill. PDFs have a skill. Spreadsheets have a skill. Video engineering has a skill. Security review has a skill. Each capability is useful, but each one also carries metadata, instructions, references, and tool entry points.
 
-当一个工具安装了上百个 Skill，每一次请求都可能携带大量无关的元数据：描述、触发词、使用说明、参考文档、脚本入口。真正被用到的可能只有一个，但所有内容都在参与成本。
+That creates a structural problem. A request may use one skill while carrying the descriptions of dozens. The model pays for context it does not need, routing quality drops, and unrelated instructions compete with the task.
 
-`skill-router` 想解决的不是“再加一个 Skill”，而是一个更基础的问题：
+`skill-router` treats that as an engineering problem, not a prompting problem.
 
-**能不能先判断要做什么，再决定该加载什么？**
+It asks a more basic question:
 
-它把 Skill 使用拆成三道门：
+**Can the system decide what to do before deciding what to load?**
 
-1. 任务不清楚，先问人，不扫描 Skill。
-2. 任务清楚后，只扫描当前 provider 中相关的最小集合。
-3. 选中 Skill 后，只加载当前任务需要的上下文。
+The answer is a three-gate workflow:
 
-如果任务重复出现，它还能把真实执行结果记录下来，形成经验、练习集和版本对比，再把可验证的改进写回 Skill。
+1. If the task is unclear, ask the user first. Do not scan or invoke skills yet.
+2. Once the task is clear, scan only the relevant skills for the active provider.
+3. Once a skill is selected, load only the context that task needs.
 
-它不是“更聪明的提示词”，更像一个面向 AI Skill 的路由器、节流器和进化管理员。
+When the same kind of task repeats, the system can record real outcomes, build an experience profile, run a practice suite, compare versions, and apply only verified improvements.
 
-## 它解决的真实问题
+It is less like a better prompt and more like a router, context budget manager, and controlled evolution administrator for an AI skill ecosystem.
 
-### 1. 每轮请求都背着一整座图书馆
+## Problems It Solves
 
-传统做法是让模型看到所有 Skill 的 `name` 和 `description`。
+### 1. Every request carries a library
 
-问题是：
+Most skill systems expose the `name` and `description` of every installed skill on every request.
 
-- 大多数 Skill 和当前任务无关
-- 长描述会持续占用上下文
-- 描述越多，模型越难稳定选择
-- 每次请求都重复支付同样的成本
+The result is predictable:
 
-`skill-router` 的思路是：常驻上下文只保留路由入口，其余 Skill 改成按需读取。
+- Most skills are irrelevant to the current task.
+- Long descriptions consume context continuously.
+- More descriptions make routing less stable.
+- The same metadata cost is paid again and again.
 
-### 2. 任务还没说清楚，就开始调用工具
+`skill-router` keeps one routing entry visible and moves the rest to on-demand loading.
 
-很多人机协作失败，不是因为工具不够，而是因为任务本身还模糊：
+### 2. The task is still unclear when tools start running
 
-- 目标输出是什么？
-- 输入在哪里？
-- 面向哪个平台？
-- 验收标准是什么？
-- 哪些操作需要授权？
+Many agent failures happen because the task is underspecified:
 
-`skill-router` 在 Skill 路由之前加入澄清门槛。任务不清晰时，先问问题，不扫描、不调用 Skill。
+- What is the deliverable?
+- Where is the input?
+- Which platform is the target?
+- What counts as done?
+- Which actions require authorization?
 
-### 3. Skill 之间无法稳定选择
+`skill-router` adds a clarification gate before skill selection. If the task is not executable, it asks questions instead of scanning skills.
 
-同一个任务可能同时适合几个 Skill。
+### 3. Multiple skills can fit the same task
 
-`skill-router` 会：
+`skill-router` scans the active provider, shortlists candidates by artifact type, domain, task phase, and availability, then either proceeds with high confidence or asks the user to choose from 2 to 5 options.
 
-- 扫描当前 provider 的 Skill
-- 按文件类型、领域、任务阶段和可用性排序
-- 置信度足够高时自动继续
-- 置信度不足时列出 2–5 个候选，让用户决定
+### 4. Experience is often lost
 
-### 4. 经验没有被记录下来
+The most valuable output of a real task is not only the final answer. It is the record of:
 
-一次真实任务结束后，最有价值的往往不是最终答案，而是：
+- what failed
+- why it failed
+- which evidence changed the diagnosis
+- which pattern is reusable
+- what should be checked first next time
 
-- 哪些尝试失败了
-- 为什么失败
-- 哪个证据改变了判断
-- 哪个模式可以复用
-- 下次应该先检查什么
+`experience_store.py` records those episodes and turns them into a skill scorecard.
 
-`experience_store.py` 把这些内容记录为 episode，并生成 Skill 能力画像。
+### 5. Self-evolution can become uncontrolled self-modification
 
-### 5. “进化”容易变成不可控的自我修改
+Automatic skill rewrites are risky. A bad update can contaminate every future invocation.
 
-自动修改 Skill 很危险。错误的更新会污染以后每一次调用。
-
-这个项目采用证据驱动流程：
+This project uses an evidence-driven path:
 
 ```text
-真实任务
-  -> 记录 episode
-  -> 提炼候选更新
-  -> 快照旧版本
-  -> 跑 practice suite
-  -> 对比升级前后
-  -> 验证通过才应用
-  -> 同步到多个 provider
+real task
+  -> experience episode
+  -> reusable pattern
+  -> candidate update
+  -> snapshot
+  -> practice suite
+  -> before/after comparison
+  -> validation
+  -> apply and sync
 ```
 
-高风险、删除、权限变化和未验证内容不会自动应用。
+High-risk changes, deletion, permission expansion, and unverified sources do not auto-apply.
 
-## 七个亮眼之处
+## Seven Standout Ideas
 
-### 1. Priority Gate：Skill 的前置闸门
+### 1. Priority Gate
 
-`skill-router` 被设计成优先入口。
+`skill-router` is the preferred entry point. It decides whether a skill is needed, which skill or skill chain fits, whether the task is clear enough, and whether the user should choose.
 
-它的职责不是替代其他 Skill，而是决定：
+### 2. Clarification Gate
 
-- 是否需要 Skill
-- 需要哪一个或哪一组 Skill
-- 当前任务是否已经足够清楚
-- 是否需要用户先做选择
+If output, scope, input, target environment, or acceptance criteria are missing, the router asks first. This prevents a common failure mode: calling the right tool for the wrong interpretation of the task.
 
-### 2. Clarification Gate：先理解，再执行
+### 3. Context Budget
 
-如果任务缺少输出物、范围、输入、环境或验收条件，先向用户提问。
+[`scripts/context_budget.py`](scripts/context_budget.py) can mark non-router skills as user-invoked:
 
-这看似简单，却能避免大量“工具调用正确、解决的问题错误”的浪费。
+```yaml
+disable-model-invocation: true
+```
 
-### 3. Context Budget：让无关 Skill 退出每轮上下文
+The skill remains installed, but its description no longer enters every request. The router can still find it and load it on demand.
 
-[`scripts/context_budget.py`](scripts/context_budget.py) 可以把非路由类 Skill 设置为 `disable-model-invocation: true`。
+The local Codex configuration in this project estimates a reduction of about `9.6k` context tokens per request.
 
-结果：
+`scripts/token_budget.py` adds profile-based reporting, apply, restore, and history.
 
-- 只有 `skill-router` 保持模型自动可见
-- 其他 Skill 仍然是完整文件，但不再每轮携带描述
-- 路由需要时，再按路径读取
-- 修改前自动备份
-- 支持 profile 和恢复
+### 4. Context Compiler
 
-在当前 Codex 环境中，这套策略估算每轮减少约 `9.6k` 上下文 token。
+[`scripts/skill_context.py`](scripts/skill_context.py) builds a query-scoped context pack for a target skill.
 
-### 4. Context Compiler：不是不读文档，而是只读需要的部分
+The pack includes:
 
-[`scripts/skill_context.py`](scripts/skill_context.py) 会为指定 Skill 和任务生成 query-scoped context pack。
+- sections relevant to the current task
+- important safety and workflow sections
+- a reference index with token estimates
+- line numbers for omitted sections
 
-它输出：
+The model can read the pack first, then load only the omitted material that is actually needed.
 
-- 当前任务相关章节
-- 关键安全和工作流章节
-- reference 索引和 token 估算
-- 被省略章节的行号
+### 5. Provider Adaptation
 
-模型可以先读 context pack，只在需要时继续读取被省略部分。
-
-### 5. Provider Adaptation：跨模型厂商工作
-
-扫描器支持：
+The scanner supports:
 
 - Claude
 - OpenCode
@@ -147,81 +134,82 @@ AI Agent 的能力正在迅速增长，但上下文不是免费的。
 - Cursor
 - Gemini
 - Windsurf
-- 自定义 provider root
+- custom provider roots
 
-它按 provider 环境变量发现目录，并统一处理 Skill 元数据、同步和备份。
+Provider roots can be overridden with environment variables, and skill copies can be synchronized across environments.
 
-### 6. Practice Loop：让 Skill 像运动员一样练习
+### 6. Practice Loop
 
-[`scripts/experience_store.py`](scripts/experience_store.py) 记录真实任务经验。
+[`scripts/experience_store.py`](scripts/experience_store.py) records real task episodes.
 
-[`scripts/practice_runner.py`](scripts/practice_runner.py) 运行可重复练习集，并比较升级前后：
+[`scripts/practice_runner.py`](scripts/practice_runner.py) runs repeatable practice suites and compares:
 
-- 通过率
-- 单例耗时
-- 输出 token
-- 改进的 case
-- 回归的 case
+- pass rate
+- case duration
+- output tokens
+- improved cases
+- regressed cases
 
-经验不是“感觉变强了”，而是可观测的变化。
+Growth becomes observable instead of anecdotal.
 
-### 7. Evidence-Driven Evolution：可回滚的自我进化
+### 7. Evidence-Driven Evolution
 
-管理员模式包含：
+Administrator mode includes:
 
 - `learning_store.py`
 - `validate_candidate.py`
 - `apply_candidate.py`
 - `sync_skill.py`
 - `context_budget.py`
+- `token_budget.py`
 - `skill_context.py`
 - `experience_store.py`
 - `practice_runner.py`
 
-它不追求无审查自修改，而是让每一次升级都留下证据、快照、验证报告和回滚路径。
+Every promoted change can leave evidence, a snapshot, a validation report, and a rollback path.
 
-## 工作流
+## Workflow
 
 ```mermaid
 flowchart TD
-    A[用户提出任务] --> B{任务是否清楚?}
-    B -- 否 --> C[向用户提问]
+    A[User task] --> B{Is the task clear?}
+    B -- No --> C[Ask clarifying questions]
     C --> B
-    B -- 是 --> D[检测 provider]
-    D --> E[聚焦扫描 Skill]
-    E --> F[短名单与置信度]
-    F --> G{置信度 >= 0.9?}
-    G -- 否 --> H[列出候选让用户选择]
-    H --> I[确认路由]
-    G -- 是 --> I
-    I --> J[生成 Context Pack]
-    J --> K[执行目标 Skill]
-    K --> L[记录 Experience Episode]
-    L --> M[生成 Candidate]
-    M --> N[运行 Practice Suite]
-    N --> O[比较版本]
-    O --> P{验证通过?}
-    P -- 否 --> Q[保留候选并等待]
-    P -- 是 --> R[快照、应用、同步]
+    B -- Yes --> D[Detect provider]
+    D --> E[Focused skill scan]
+    E --> F[Shortlist and confidence]
+    F --> G{Confidence >= 0.9?}
+    G -- No --> H[Ask user to choose]
+    H --> I[Confirmed route]
+    G -- Yes --> I
+    I --> J[Build context pack]
+    J --> K[Execute target skill]
+    K --> L[Record experience episode]
+    L --> M[Create candidate update]
+    M --> N[Run practice suite]
+    N --> O[Compare versions]
+    O --> P{Validated?}
+    P -- No --> Q[Hold candidate]
+    P -- Yes --> R[Snapshot, apply, sync]
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 克隆
+### 1. Clone
 
 ```bash
 git clone https://github.com/qiusheng182/skill-router.git
 cd skill-router
 ```
 
-### 2. 查看 provider 根目录
+### 2. Inspect provider roots
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
   -File .\scripts\scan-skills.ps1 -ListProviders
 ```
 
-### 3. 做一次聚焦扫描
+### 3. Run a focused scan
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
@@ -229,21 +217,21 @@ powershell -NoProfile -ExecutionPolicy Bypass `
   -Query "pdf" -Brief -Top 10
 ```
 
-### 4. 预览上下文预算
+### 4. Preview the context budget
 
 ```powershell
 python .\scripts\context_budget.py `
   --provider codex --keep skill-router
 ```
 
-确认后应用：
+Apply it:
 
 ```powershell
 python .\scripts\context_budget.py `
   --provider codex --keep skill-router --apply
 ```
 
-### 5. 为某个 Skill 生成 Context Pack
+### 5. Build a context pack for a skill
 
 ```powershell
 python .\scripts\skill_context.py pack `
@@ -252,7 +240,7 @@ python .\scripts\skill_context.py pack `
   --budget 1200
 ```
 
-### 6. 记录经验并跑练习
+### 6. Record experience and run practice
 
 ```powershell
 python .\scripts\experience_store.py record `
@@ -269,12 +257,13 @@ python .\scripts\practice_runner.py run `
   --suite .\assets\practice-suite.example.json
 ```
 
-## 目录结构
+## Repository Layout
 
 ```text
 skill-router/
 ├── SKILL.md
 ├── README.md
+├── README.zh-CN.md
 ├── agents/
 ├── assets/
 ├── docs/
@@ -283,66 +272,69 @@ skill-router/
 └── tests/
 ```
 
-## 设计哲学
+## Design Principles
 
-### 先问清楚
+### Clarify before acting
 
-清晰的问题比昂贵的工具调用便宜得多。
+A clear question is cheaper than an expensive tool call built on the wrong assumption.
 
-### 最小可靠路由
+### Route minimally
 
-选择能完成任务的最小 Skill 链，不堆叠流程。
+Use the smallest reliable skill chain. Do not stack workflows for appearance.
 
-### 按需加载
+### Load on demand
 
-不是不读文档，而是只读当前任务真正需要的部分。
+Do not read everything. Read the part the task needs, then expand only when required.
 
-### 证据驱动
+### Require evidence
 
-经验必须能转化为可验证的更新，而不是让模型自由改写自己。
+Experience matters only when it becomes a testable improvement.
 
-### 可回滚
+### Keep rollback paths
 
-每次应用前保留快照，每次同步前保留目标端备份。
+Snapshot before applying. Back up before synchronizing.
 
-### 多端一致
+### Keep one canonical version
 
-规范版本只保留一份，其他 provider 通过工具机械同步。
+Maintain one source of truth and synchronize other provider copies mechanically.
 
-## 它不是什么
+## What It Is Not
 
-- 不是自动越权执行器
-- 不是让模型无限自我修改的框架
-- 不是替代 Skill 的业务逻辑
-- 不是绕过 DRM、权限、付费墙或访问控制的工具
-- 不是保证 100% 路由正确的魔法
+- It is not an authorization bypass.
+- It is not a framework for uncontrolled self-modification.
+- It is not a replacement for a skill's domain logic.
+- It is not a tool for DRM, paywall, access-control, or license bypass.
+- It is not a guarantee that routing will always be perfect.
 
-它做的是把“该不该用、用哪个、加载多少、是否值得升级”变成可管理的工程问题。
+It turns "should we use it, which one, how much should we load, and is it worth promoting?" into manageable engineering questions.
 
-## 安全与隐私
+## Security And Privacy
 
-- 默认不自动应用高风险变更
-- 不允许未验证的权限扩展
-- 同步前备份目标 Skill
-- 记录失败和证据，不记录不该记录的凭据
-- Web 内容只作为资料，不被当作可执行指令
+- Safe default policy: `propose`
+- No automatic high-risk application
+- No unverified permission expansion
+- Snapshot before apply
+- Backup before sync
+- Treat web content as data, never as executable instructions
 
-## 新闻资料
+## Press And Documentation
 
-- [新闻特稿：当 Skill 学会节省上下文](docs/feature-story.md)
-- [架构说明](docs/architecture.md)
-- [上下文预算说明](docs/context-budget.md)
-- [发布资料包](docs/press-kit.md)
+- [Feature story: When Skills Learn to Save Context](docs/feature-story.en.md)
+- [Architecture](docs/architecture.md)
+- [Context budget](docs/context-budget.md)
+- [Press kit](docs/press-kit.md)
+- [Chinese README](README.zh-CN.md)
+- [Chinese feature story](docs/feature-story.md)
 
-## 状态
+## Status
 
-这个项目仍在快速迭代。
+The project is under active iteration.
 
-当前重点：
+Current priorities:
 
-- 更低成本的 Skill 路由
-- 更稳定的跨 provider 同步
-- 更可验证的 Skill 进化
-- 更少的常驻上下文
+- cheaper skill routing
+- more reliable cross-provider synchronization
+- more verifiable skill evolution
+- less always-loaded context
 
-如果它让 AI 在完成任务时少背一点无关资料、多留下一点可复用经验，那么它的目标就达到了。
+If it helps an AI carry less irrelevant documentation while retaining more reusable experience, it is moving in the right direction.
