@@ -257,7 +257,8 @@ AI Agent 正在像手机一样安装越来越多的能力。写文档、读 PDF�
 - Make the README show the problem, the outcome, and a quick start in the first
   screen.
 - Publish a release with stable install instructions.
-- Add a social preview image in GitHub repository settings.
+- Upload `assets/social-preview.png` in GitHub repository settings, or rerun
+  `scripts/make_social_preview.py` before uploading.
 - Pin the repository on the owner profile while sharing it.
 
 ### Day 1: Technical launch
