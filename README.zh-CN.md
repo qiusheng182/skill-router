@@ -1,6 +1,28 @@
 # Skill Router：一个会节省上下文、会练习、也会进化的 Skill 管理员
 
+![Skill Router 社交预览图](assets/social-preview.png)
+
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Providers](https://img.shields.io/badge/providers-6-0A7C66)](SKILL.md)
+[![Context on demand](https://img.shields.io/badge/context-on--demand-5CA8FF)](docs/context-budget.md)
+[![GitHub stars](https://img.shields.io/github/stars/qiusheng182/skill-router?style=social)](https://github.com/qiusheng182/skill-router/stargazers)
+
 > 不是让 AI 记住更多技能，而是让它在正确的时间，只记住正确的技能。
+
+`skill-router` 面向 Skill 数量已经超过提示词承载能力的 Agent 构建者：
+只保留一个常驻路由入口，只扫描相关信息，按需编译上下文，并用证据推动
+Skill 进化，而不是让模型无约束地改写自己。
+
+如果它帮你省下了真实上下文成本，欢迎点一个 star，让更多 Agent 构建者
+能找到它。
+
+## 20 秒看懂它做什么
+
+- 任务不完整时，先澄清，再扫描或调用 Skill。
+- 为当前 provider 路由到最小可靠 Skill 链。
+- 把非路由 Skill 的 description 移出常驻上下文。
+- 为当前任务编译 context pack，而不是加载全部参考资料。
+- 记录经验、运行练习、验证变更，并保留回滚路径。
 
 ## 导语
 
@@ -330,6 +352,7 @@ skill-router/
 ## 新闻资料
 
 - [新闻特稿：当 Skill 学会节省上下文](docs/feature-story.md)
+- [发布工具包](docs/launch-kit.md)
 - [架构说明](docs/architecture.md)
 - [上下文预算说明](docs/context-budget.md)
 - [发布资料包](docs/press-kit.md)

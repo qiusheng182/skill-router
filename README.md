@@ -1,6 +1,29 @@
 # Skill Router: A Skill Administrator That Saves Context, Practices, and Evolves
 
+![Skill Router social preview](assets/social-preview.png)
+
+[![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Providers](https://img.shields.io/badge/providers-6-0A7C66)](SKILL.md)
+[![Context on demand](https://img.shields.io/badge/context-on--demand-5CA8FF)](docs/context-budget.md)
+[![GitHub stars](https://img.shields.io/github/stars/qiusheng182/skill-router?style=social)](https://github.com/qiusheng182/skill-router/stargazers)
+
 > The goal is not to make an AI remember more skills. The goal is to make it remember the right skills at the right time.
+
+`skill-router` is for agent builders whose skill libraries have outgrown their
+prompts. Keep one routing entry visible, scan only what matters, compile context
+on demand, and evolve skills with evidence instead of uncontrolled rewrites.
+
+If this solves a real context problem for you, star the repository so more
+agent builders can find it.
+
+## What It Does In 20 Seconds
+
+- Clarifies incomplete tasks before scanning or invoking a skill.
+- Routes to the smallest reliable skill chain for the active provider.
+- Moves non-router skill descriptions out of the always-loaded context.
+- Compiles a task-scoped context pack instead of loading every reference.
+- Records experience, runs practice suites, validates changes, and keeps
+  rollback paths.
 
 ## The Story
 
@@ -320,6 +343,7 @@ It turns "should we use it, which one, how much should we load, and is it worth 
 ## Press And Documentation
 
 - [Feature story: When Skills Learn to Save Context](docs/feature-story.en.md)
+- [Launch kit](docs/launch-kit.md)
 - [Architecture](docs/architecture.md)
 - [Context budget](docs/context-budget.md)
 - [Press kit](docs/press-kit.md)
